@@ -13,10 +13,11 @@ contract DeployFundMe is Script {
         // We don't spend the gas
         // Before broadcasting: simulate environment
         HelperConfig helperConfig = new HelperConfig();
+        address ethUsdPriceFeed = helperConfig.activeNetworkConfig();
 
         // After broadcasting: real transaction
         vm.startBroadcast();
-        FundMe fundMe = new FundMe(0xCf45E7346f604C883cE36AEAc6CaeC5f45f2fe09);
+        FundMe fundMe = new FundMe(ethUsdPriceFeed);
         vm.stopBroadcast();
         // Executes and deploy fundme, so fundme's msg.sender and i_owner is DeployFundMe address
         return fundMe;
