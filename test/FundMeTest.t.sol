@@ -61,6 +61,7 @@ contract FundMeTest is Test {
         uint256 fundAmount = 1e18; // 1 ETH in Wei
 
         vm.deal(funder, fundAmount);
+        // starts a session where subsequent actions are considered as being performed by the specified account
         vm.startPrank(funder);
         fundMe.fund{value: fundAmount}();
         vm.stopPrank();
@@ -76,12 +77,13 @@ contract FundMeTest is Test {
 
         // Arrange
         uint256 fundAmount = 1e18; // 1 ETH in Wei
-        vm.deal(address(this), fundAmount);
+        
+        // vm.deal(owner, fundAmount);
         fundMe.fund{value: fundAmount}();
         uint256 beforeBalance = owner.balance;
-
+        
         // Act
-
+        // Owner is deploy contract, not test contract
         vm.startPrank(owner); // Start impersonating the owner
         fundMe.withdraw();
         vm.stopPrank(); // Stop impersonating the owner
