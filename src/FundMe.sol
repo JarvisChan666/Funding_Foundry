@@ -46,6 +46,10 @@ contract FundMe {
         return s_priceFeed.version();
     }
 
+    function getFunderCount() public view returns (uint256) {
+        return funders.length;
+    }
+
     modifier onlyOwner() {
         if (msg.sender != i_owner) revert FundMe_NotOwner();
         _;
@@ -80,7 +84,6 @@ contract FundMe {
         // // send
         // bool sendSuccess = payable(msg.sender).send(address(this).balance);
         // require(sendSuccess, "Send failed");
-
 
         // "call" to send all eth to sender address
         (bool callSuccess, ) = payable(msg.sender).call{

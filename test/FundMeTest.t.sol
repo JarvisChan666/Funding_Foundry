@@ -15,6 +15,7 @@ contract FundMeTest is Test {
     FundMe public fundMe;
 
     /// @dev Sets up a new instance of the FundMe contract for each test case.
+    /// Fundme owner is deploy script
     function setUp() external {
         DeployFundMe deployFundMe = new DeployFundMe();
         fundMe = deployFundMe.run();
@@ -31,10 +32,74 @@ contract FundMeTest is Test {
     }
 
     /// @notice Testing that the price feed version called by FundMe is accurate and returning the expected version number.
+    /// Only pass in local mock
     function testPriceFeedVersionIsAccurate() public {
         uint256 version = fundMe.getVersion();
         console.log(version);
         assertEq(version, 4);
+    }
+
+    /// @notice Test funding of the contract and balance update.
+    /// Only pass in local mock
+    function testFundAndBalanceUpdate() public {
+        uint256 beforeBalance = address(fundMe).balance;
+        uint256 fundAmount = 1e18; // 1 ETH in Wei
+        vm.deal(address(this), fundAmount);
+        fundMe.fund{value: fundAmount}();
+
+        uint256 afterBalance = address(fundMe).balance;
+        assertEq(
+            afterBalance,
+            beforeBalance + fundAmount,
+            "Contract balance should be increased by the fund amount"
+        );
+    }
+
+    /// @notice Test funders list is updated after funding.
+    function testFunderIsAddedToList() public {
+        address funder = address(2); // An example address for funder.
+        uint256 fundAmount = 1e18; // 1 ETH in Wei
+
+        vm.deal(funder, fundAmount);
+        // starts a session where subsequent actions are considered as being performed by the specified account
+        vm.startPrank(funder);
+        fundMe.fund{value: fundAmount}();
+        vm.stopPrank();
+
+        // check if the last funder in the array is the address that just funded
+        address lastFunder = fundMe.funders(fundMe.getFunderCount() - 1);
+        assertEq(lastFunder, funder, "Funder should be added to funders list");
+    }
+
+    /// @notice Test withdrawal of funds by owner.
+    function testWithdrawalByOwner() public {
+        address owner = fundMe.i_owner();
+
+        // Arrange
+        uint256 fundAmount = 1e18; // 1 ETH in Wei
+        
+        // vm.deal(owner, fundAmount);
+        fundMe.fund{value: fundAmount}();
+        uint256 beforeBalance = owner.balance;
+        
+        // Act
+        // Owner is deploy contract, not test contract
+        vm.startPrank(owner); // Start impersonating the owner
+        fundMe.withdraw();
+        vm.stopPrank(); // Stop impersonating the owner
+
+        // Assert
+        uint256 afterBalance = owner.balance;
+        assertEq(
+            afterBalance,
+            beforeBalance + fundAmount,
+            "Owner balance should have increased by fund amount"
+        );
+        assertEq(
+            address(fundMe).balance,
+            0,
+            "Contract balance should be 0 after withdrawal"
+        );
     }
 }
 
