@@ -7,8 +7,10 @@ import {Test, console} from "forge-std/Test.sol";
 import {FundMe} from "../src/FundMe.sol";
 import {DeployFundMe} from "../script/DeployFundMe.s.sol";
 
+
 contract FundMeTest is Test {
     FundMe public fundMe;
+    
 
     // setUp will be called in each test function
     // providing a separate and fresh instance of the FundMe contract for each test to ensure tests are independent.
@@ -31,11 +33,11 @@ contract FundMeTest is Test {
         assertEq(fundMe.i_owner(), msg.sender);
     }
 
-    // function testPriceFeedVersionIsAccurate() public {
-    //     uint256 version = fundMe.getVersion();
-    //     console.log(version);
-    //     assertEq(version, 4);
-    // }
+    function testPriceFeedVersionIsAccurate() public {
+        uint256 version = fundMe.getVersion();
+        console.log(version);
+        assertEq(version, 4);
+    }
 }
 
 /*
