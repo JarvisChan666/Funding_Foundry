@@ -52,7 +52,11 @@ contract FundMe {
     }
 
     bool private isWithdrawing;
+    // existing state variables...
+    mapping(address => uint256) private addressToFunderIndex;
 
+    // Prevent attacker's contract is able to repeatedly call the withdraw function before it finishes execution
+    // potentially draining the contract's funds.
     modifier nonReentrant() {
         require(!isWithdrawing, "No reentrancy");
         isWithdrawing = true;
@@ -60,7 +64,7 @@ contract FundMe {
         isWithdrawing = false;
     }
 
-    function withdraw() public onlyOwner nonReentrant(){
+    function withdraw() public onlyOwner nonReentrant {
         for (
             uint256 funderIndex = 0;
             funderIndex < funders.length;

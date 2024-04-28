@@ -8,9 +8,13 @@ pragma solidity ^0.8.13;
 // MAINNET ETH/USD
 
 import {Script} from "forge-std/Script.sol";
+import {MockV3Aggregator} from "../test/mocks/MockV3Aggregator.sol";
 
-contract HelperConfig {
+contract HelperConfig is Script {
     NetworkConfig public activeNetworkConfig;
+
+    uint8 public constant DECIMALS = 8;
+    int256 public constant INITIAL_PRICE = 2000e8;
 
     struct NetworkConfig {
         address priceFeed; // ETH/USD feed address
@@ -21,8 +25,11 @@ contract HelperConfig {
             activeNetworkConfig = getSepoliaEthConfig();
         } else if (block.chainid == 1) {
             activeNetworkConfig = getMainnetEthConfig();
-        } else {
-            activeNetworkConfig = getAnvilEthConfig();
+        } else if (block.chainid ==80001) {
+            activeNetworkConfig = getPolygonEthConfig();
+        }
+        else {
+            activeNetworkConfig =  getOrCreateAnvilEthConfig();
         }
     }
 
@@ -49,5 +56,28 @@ contract HelperConfig {
         });
         return polygonEthConfig;
     }
-    function getAnvilEthConfig() public pure returns (NetworkConfig memory) {}
+
+    // Local mock network configuration
+    function getOrCreateAnvilEthConfig() public returns (NetworkConfig memory) {
+        
+        // Return directly if it is exist
+        if (activeNetworkConfig.priceFeed != address(0)) {
+            return activeNetworkConfig;
+        }
+        
+        vm.startBroadcast();
+        MockV3Aggregator mockPricefeed = new MockV3Aggregator(
+            DECIMALS,
+            INITIAL_PRICE
+        );
+        vm.stopBroadcast();
+
+        NetworkConfig memory anvilConfig = NetworkConfig({
+            priceFeed: address(mockPricefeed)
+        });
+        return anvilConfig;
+    }
+
+    // write a linkedlist
+    
 }
