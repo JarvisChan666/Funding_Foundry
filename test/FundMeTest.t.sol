@@ -28,13 +28,13 @@ contract FundMeTest is Test {
 
     /// @notice Testing that the owner of the FundMe contract is the deployer.
     function testOwnerIsMsgSender() public {
-        assertEq(fundMe.i_owner(), msg.sender);
+        assertEq(fundMe.owner(), msg.sender);
     }
 
     /// @notice Testing that the price feed version called by FundMe is accurate and returning the expected version number.
     /// Only pass in local mock
     function testPriceFeedVersionIsAccurate() public {
-        uint256 version = fundMe.getVersion();
+        uint256 version = fundMe.getPriceFeedVersion();
         console.log(version);
         assertEq(version, 4);
     }
@@ -73,15 +73,16 @@ contract FundMeTest is Test {
 
     /// @notice Test withdrawal of funds by owner.
     function testWithdrawalByOwner() public {
-        address owner = fundMe.i_owner();
+        address owner = fundMe.owner();
 
         // Arrange
         uint256 fundAmount = 1e18; // 1 ETH in Wei
-        
-        // vm.deal(owner, fundAmount);
-        fundMe.fund{value: fundAmount}();
+
+        // 2 Ways to fund
+        vm.deal(address(fundMe), fundAmount);
+        // fundMe.fund{value: fundAmount}();
         uint256 beforeBalance = owner.balance;
-        
+
         // Act
         // Owner is deploy contract, not test contract
         vm.startPrank(owner); // Start impersonating the owner
