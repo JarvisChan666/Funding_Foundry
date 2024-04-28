@@ -77,7 +77,5 @@ contract HelperConfig is Script {
         });
         return anvilConfig;
     }
-
-    // write a linkedlist
     
 }

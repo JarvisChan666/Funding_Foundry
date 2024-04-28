@@ -81,7 +81,8 @@ contract FundMe {
         // bool sendSuccess = payable(msg.sender).send(address(this).balance);
         // require(sendSuccess, "Send failed");
 
-        // call
+
+        // "call" to send all eth to sender address
         (bool callSuccess, ) = payable(msg.sender).call{
             value: address(this).balance
         }("");
@@ -100,6 +101,7 @@ contract FundMe {
     //receive()  fallback()
 
     /*
+    when contract reveive eth but don't call any function
      ensures that any accidental ETH sent to the contract 
      using send or transfer still calls the fund() function.
     */
