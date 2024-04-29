@@ -22,21 +22,13 @@ contract FundMeTest is Test {
     }
 
     /// @notice Testing that the minimum USD funding amount is set correctly in the FundMe contract.
-    function testMinimumDollarIsFive() public {
+    function testMinimumDollarIsFive() public view {
         assertEq(fundMe.MINIMUM_USD(), 5e18);
     }
 
     /// @notice Testing that the owner of the FundMe contract is the deployer.
-    function testOwnerIsMsgSender() public {
+    function testOwnerIsMsgSender() public view {
         assertEq(fundMe.owner(), msg.sender);
-    }
-
-    /// @notice Testing that the price feed version called by FundMe is accurate and returning the expected version number.
-    /// Only pass in local mock
-    function testPriceFeedVersionIsAccurate() public {
-        uint256 version = fundMe.getPriceFeedVersion();
-        console.log(version);
-        assertEq(version, 4);
     }
 
     /// @notice Test funding of the contract and balance update.
@@ -55,12 +47,17 @@ contract FundMeTest is Test {
         );
     }
 
+    function testFundFailWithNoEnoughEth() public {
+        vm.expectRevert();
+        fundMe.fund();
+    }
+
     /// @notice Test funders list is updated after funding.
     function testFunderIsAddedToList() public {
         address funder = address(2); // An example address for funder.
         uint256 fundAmount = 1e18; // 1 ETH in Wei
 
-        vm.deal(funder, fundAmount);
+        vm.deal(funder, fundAmount); // Funder get ETH to fund
         // starts a session where subsequent actions are considered as being performed by the specified account
         vm.startPrank(funder);
         fundMe.fund{value: fundAmount}();
@@ -69,6 +66,24 @@ contract FundMeTest is Test {
         // check if the last funder in the array is the address that just funded
         address lastFunder = fundMe.funders(fundMe.getFunderCount() - 1);
         assertEq(lastFunder, funder, "Funder should be added to funders list");
+    }
+
+    function testAddressToAmountFunded() public {
+        uint256 fundAmount = 1e18; // 1 ETH in Wei
+
+        fundMe.fund{value: fundAmount}();
+        uint256 amountFunded = fundMe.getAddressToAmountFunded(address(this));
+
+        assertEq(fundAmount, amountFunded);
+
+        // Another way to test, using foundry 'Prank'
+        // address funder = address(2); // An example address for funder.
+        // vm.deal(funder, fundAmount); // Funder get ETH to fund
+        // // starts a session where subsequent actions are considered as being performed by the specified account
+        // vm.startPrank(funder);
+        // fundMe.fund{value: fundAmount}();
+        // vm.stopPrank();
+        // uint256 amountFunded = fundMe.getAddressToAmountFunded(funder);
     }
 
     /// @notice Test withdrawal of funds by owner.
@@ -103,10 +118,3 @@ contract FundMeTest is Test {
         );
     }
 }
-
-/*
-unit
-integration
-forked
-staging
-*/

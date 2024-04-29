@@ -20,7 +20,7 @@ contract FundMe {
     using PriceConverter for uint256;
 
     // State variables
-    mapping(address => uint256) public addressToAmountFunded;
+    mapping(address => uint256) private addressToAmountFunded;
     address[] public funders;
     address public immutable owner;
     uint256 public constant MINIMUM_USD = 5e18;
@@ -74,17 +74,13 @@ contract FundMe {
         require(success, "Transfer failed");
     }
 
-    /// @notice Returns the current price feed version.
-    function getPriceFeedVersion() public view returns (uint256) {
-        return priceFeed.version();
-    }
-
     // Fallback and receive functions to handle direct ETH transfers
     /*
     The difference is: 
     the Receive function is only called when the contract receives a transaction, 
     while the Fallback function, in addition to being called when the contract receives a transaction, is also called when there is no matching function in the contract or when additional data needs to be sent to the contract.
     */
+    // fallback will be called in this contract
     fallback() external payable {
         fund();
         emit FundReceived(msg.sender, msg.value);
@@ -98,5 +94,13 @@ contract FundMe {
     // Optional getter for the size of the funders array.
     function getFunderCount() public view returns (uint256) {
         return funders.length;
+    }
+
+    function getAddressToAmountFunded(address fundingAddress) external view returns (uint256) {
+        return addressToAmountFunded[fundingAddress];
+    }
+
+    function getFunder(uint256 index) external view returns (address) {
+        return funders[index];
     }
 }
