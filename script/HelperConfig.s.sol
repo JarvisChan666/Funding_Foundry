@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 
 pragma solidity ^0.8.13;
 
@@ -25,17 +25,17 @@ contract HelperConfig is Script {
             activeNetworkConfig = getSepoliaEthConfig();
         } else if (block.chainid == 1) {
             activeNetworkConfig = getMainnetEthConfig();
-        } else if (block.chainid ==80001) {
+        } else if (block.chainid == 80001) {
             activeNetworkConfig = getPolygonEthConfig();
-        }
-        else {
-            activeNetworkConfig =  getOrCreateAnvilEthConfig();
+        } else {
+            activeNetworkConfig = getOrCreateAnvilEthConfig();
         }
     }
 
-    // pure: the function won't read and modified contract's state
-    // Only return hardcode data ! ! !
-    // If return configuration data that depends on a stored value or a state variable, they should be marked as 'view'
+    function getActiveNetworkConfig() public view returns (NetworkConfig memory) {
+        return activeNetworkConfig;
+    }
+
     function getSepoliaEthConfig() public pure returns (NetworkConfig memory) {
         NetworkConfig memory sepoliaConfig = NetworkConfig({
             priceFeed: 0xCf45E7346f604C883cE36AEAc6CaeC5f45f2fe09
@@ -59,12 +59,11 @@ contract HelperConfig is Script {
 
     // Local mock network configuration
     function getOrCreateAnvilEthConfig() public returns (NetworkConfig memory) {
-        
         // Return directly if it is exist
         if (activeNetworkConfig.priceFeed != address(0)) {
             return activeNetworkConfig;
         }
-        
+
         vm.startBroadcast();
         MockV3Aggregator mockPricefeed = new MockV3Aggregator(
             DECIMALS,
@@ -77,5 +76,4 @@ contract HelperConfig is Script {
         });
         return anvilConfig;
     }
-    
 }
