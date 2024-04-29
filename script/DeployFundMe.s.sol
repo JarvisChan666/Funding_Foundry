@@ -6,6 +6,13 @@ import {FundMe} from "../src/FundMe.sol";
 import {HelperConfig} from "./HelperConfig.s.sol";
 
 contract DeployFundMe is Script {
+    address public immutable owner;
+    constructor() {
+        // If we just deploy FundMe,
+        // owner will be our own address
+        owner = msg.sender;
+    }
+
     function run() external returns (FundMe) {
         HelperConfig helperConfig = new HelperConfig();
         address ethUsdPriceFeed = helperConfig.activeNetworkConfig();
