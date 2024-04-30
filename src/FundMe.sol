@@ -62,8 +62,9 @@ contract FundMe {
     /// @notice Withdraws all funds from the contract sending them to the owner.
     /// @dev This function uses nonReentrancy modifier to prevent reentrant attacks.
     function withdraw() public onlyOwner nonReentrant {
+        uint256 funderLength = funders.length; // Read storage once, gas efficient
         address[] memory fundersCopy = funders;
-        for (uint256 i = 0; i < fundersCopy.length; i++) {
+        for (uint256 i = 0; i < funderLength; i++) {
             address funder = fundersCopy[i];
             addressToAmountFunded[funder] = 0;
         }
@@ -73,6 +74,19 @@ contract FundMe {
         );
         require(success, "Transfer failed");
     }
+    
+    // function withdraw() public onlyOwner nonReentrant {
+    //     address[] memory fundersCopy = funders;
+    //     for (uint256 i = 0; i < fundersCopy.length; i++) {
+    //         address funder = fundersCopy[i];
+    //         addressToAmountFunded[funder] = 0;
+    //     }
+    //     funders = new address[](0);
+    //     (bool success, ) = payable(owner).call{value: address(this).balance}(
+    //         ""
+    //     );
+    //     require(success, "Transfer failed");
+    // }
 
     // Fallback and receive functions to handle direct ETH transfers
     /*

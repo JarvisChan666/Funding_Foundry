@@ -16,6 +16,7 @@ contract FundMeTest is Test {
     DeployFundMe private deployFundMe;
     address private FUNDER = makeAddr("jarvis");
     uint256 private fundAmount = 1e18;
+    uint256 private GAS_PRICE = 6;
 
     /// @dev Sets up a new instance of the FundMe contract for each test case.
     /// Fundme owner is deploy script
@@ -104,18 +105,53 @@ contract FundMeTest is Test {
         fundMe.withdraw();
     }
 
-    function testWithdrawByOwner() public funded {
+    function testWithdrawBySingleOwner() public funded {
         // Arrange
         uint256 beforeOwnerBalance = fundMe.owner().balance;
         uint256 beforeFundMeBalance = address(fundMe).balance;
 
         //Act
+        uint256 beforeGas  = gasleft(); // How much gas you left before transaction.
+        vm.txGasPrice(GAS_PRICE); // et the 
         vm.prank(fundMe.owner());
         fundMe.withdraw();
+
+        uint256 afterGas  = gasleft();
+        uint256 gasUsed = (beforeGas - afterGas) * tx.gasprice; 
+        console.log(gasUsed);
+        console.log(tx.gasprice);
+        console.log(beforeGas);
+        console.log(afterGas);
+
+        // Assert
         uint256 afterOwnerBalance = fundMe.owner().balance;
         uint256 afterFundMeBalance = address(fundMe).balance;
         // Assert
         assertEq(afterFundMeBalance, 0);
         assertEq(afterOwnerBalance, beforeOwnerBalance + beforeFundMeBalance);
+    }
+
+    function testWithdrawFromMultipleFunders() public funded {
+        uint160 numberOfFunders =  10;
+        uint160 index = 1;
+        for (uint160 i = index; i < numberOfFunders; i++) {
+            // hoax = prank + deal
+            hoax(address(i), fundAmount);
+            fundMe.fund{value: fundAmount}();
+        }
+
+        uint256 beforeOwnerBalance =fundMe.owner().balance;
+        uint256 beforeFundMeBalance = address(fundMe).balance;
+
+        vm.startPrank(fundMe.owner());
+        fundMe.withdraw();
+        vm.stopPrank();
+
+        uint256 afterFundMeBalance = address(fundMe).balance;
+        uint256 afterOwnerBalance = fundMe.owner().balance;
+
+        // Assert
+        assertEq(afterFundMeBalance, 0);
+        assertEq(beforeFundMeBalance + beforeOwnerBalance, afterOwnerBalance);
     }
 }
