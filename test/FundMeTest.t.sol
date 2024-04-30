@@ -12,13 +12,29 @@ import {DeployFundMe} from "../script/DeployFundMe.s.sol";
 /// @author jarvischan
 
 contract FundMeTest is Test {
-    FundMe public fundMe;
+    FundMe private fundMe;
+    DeployFundMe private deployFundMe;
+    address private FUNDER = makeAddr("jarvis");
+    uint256 private fundAmount = 1e18;
+    uint256 private GAS_PRICE = 6;
 
     /// @dev Sets up a new instance of the FundMe contract for each test case.
     /// Fundme owner is deploy script
     function setUp() external {
-        DeployFundMe deployFundMe = new DeployFundMe();
+        deployFundMe = new DeployFundMe();
         fundMe = deployFundMe.run();
+        /*
+        Within the deployment process(during that deployment process) initiated by setUp
+        the DeployFundMe contract is msg.sender for the constructor of FundMe,
+        and hence it becomes the owner.
+        */
+    }
+
+    modifier funded() {
+        vm.prank(FUNDER);
+        vm.deal(FUNDER, fundAmount);
+        fundMe.fund{value: fundAmount}();
+        _;
     }
 
     /// @notice Testing that the minimum USD funding amount is set correctly in the FundMe contract.
@@ -26,8 +42,9 @@ contract FundMeTest is Test {
         assertEq(fundMe.MINIMUM_USD(), 5e18);
     }
 
-    /// @notice Testing that the owner of the FundMe contract is the deployer.
+    /// @notice
     function testOwnerIsMsgSender() public view {
+        console.log(fundMe.owner()); //0x18
         assertEq(fundMe.owner(), msg.sender);
     }
 
@@ -35,9 +52,10 @@ contract FundMeTest is Test {
     /// Only pass in local mock
     function testFundAndBalanceUpdate() public {
         uint256 beforeBalance = address(fundMe).balance;
-        uint256 fundAmount = 1e18; // 1 ETH in Wei
-        vm.deal(address(this), fundAmount);
+        vm.deal(FUNDER, fundAmount);
+        vm.startPrank(FUNDER);
         fundMe.fund{value: fundAmount}();
+        vm.stopPrank();
 
         uint256 afterBalance = address(fundMe).balance;
         assertEq(
@@ -54,67 +72,86 @@ contract FundMeTest is Test {
 
     /// @notice Test funders list is updated after funding.
     function testFunderIsAddedToList() public {
-        address funder = address(2); // An example address for funder.
-        uint256 fundAmount = 1e18; // 1 ETH in Wei
-
-        vm.deal(funder, fundAmount); // Funder get ETH to fund
+        vm.deal(FUNDER, fundAmount); // Funder get ETH to fund
         // starts a session where subsequent actions are considered as being performed by the specified account
-        vm.startPrank(funder);
+        vm.startPrank(FUNDER);
         fundMe.fund{value: fundAmount}();
         vm.stopPrank();
 
-        // check if the last funder in the array is the address that just funded
+        // check if the last FUNDER in the array is the address that just funded
         address lastFunder = fundMe.funders(fundMe.getFunderCount() - 1);
-        assertEq(lastFunder, funder, "Funder should be added to funders list");
+        assertEq(lastFunder, FUNDER, "Funder should be added to funders list");
     }
 
     function testAddressToAmountFunded() public {
-        uint256 fundAmount = 1e18; // 1 ETH in Wei
-
+        vm.deal(FUNDER, fundAmount); // Funder get ETH to fund
+        // starts a session where subsequent actions are considered as being performed by the specified account
+        vm.startPrank(FUNDER);
         fundMe.fund{value: fundAmount}();
-        uint256 amountFunded = fundMe.getAddressToAmountFunded(address(this));
+        vm.stopPrank();
+        uint256 amountFunded = fundMe.getAddressToAmountFunded(FUNDER);
+
+        // Another way to test, using test contract itself
+        // fundMe.fund{value: fundAmount}();
+        // uint256 amountFunded = fundMe.getAddressToAmountFunded(address(this));
 
         assertEq(fundAmount, amountFunded);
-
-        // Another way to test, using foundry 'Prank'
-        // address funder = address(2); // An example address for funder.
-        // vm.deal(funder, fundAmount); // Funder get ETH to fund
-        // // starts a session where subsequent actions are considered as being performed by the specified account
-        // vm.startPrank(funder);
-        // fundMe.fund{value: fundAmount}();
-        // vm.stopPrank();
-        // uint256 amountFunded = fundMe.getAddressToAmountFunded(funder);
     }
 
     /// @notice Test withdrawal of funds by owner.
-    function testWithdrawalByOwner() public {
-        address owner = fundMe.owner();
-
-        // Arrange
-        uint256 fundAmount = 1e18; // 1 ETH in Wei
-
-        // 2 Ways to fund
-        vm.deal(address(fundMe), fundAmount);
-        // fundMe.fund{value: fundAmount}();
-        uint256 beforeBalance = owner.balance;
-
-        // Act
-        // Owner is deploy contract, not test contract
-        vm.startPrank(owner); // Start impersonating the owner
+    /// check balance, check if not withdrawed by owner
+    function testWithdrawNotByOwner() public funded {
+        vm.expectRevert();
         fundMe.withdraw();
-        vm.stopPrank(); // Stop impersonating the owner
+    }
+
+    function testWithdrawBySingleOwner() public funded {
+        // Arrange
+        uint256 beforeOwnerBalance = fundMe.owner().balance;
+        uint256 beforeFundMeBalance = address(fundMe).balance;
+
+        //Act
+        uint256 beforeGas  = gasleft(); // How much gas you left before transaction.
+        vm.txGasPrice(GAS_PRICE); // et the 
+        vm.prank(fundMe.owner());
+        fundMe.withdraw();
+
+        uint256 afterGas  = gasleft();
+        uint256 gasUsed = (beforeGas - afterGas) * tx.gasprice; 
+        console.log(gasUsed);
+        console.log(tx.gasprice);
+        console.log(beforeGas);
+        console.log(afterGas);
 
         // Assert
-        uint256 afterBalance = owner.balance;
-        assertEq(
-            afterBalance,
-            beforeBalance + fundAmount,
-            "Owner balance should have increased by fund amount"
-        );
-        assertEq(
-            address(fundMe).balance,
-            0,
-            "Contract balance should be 0 after withdrawal"
-        );
+        uint256 afterOwnerBalance = fundMe.owner().balance;
+        uint256 afterFundMeBalance = address(fundMe).balance;
+        // Assert
+        assertEq(afterFundMeBalance, 0);
+        assertEq(afterOwnerBalance, beforeOwnerBalance + beforeFundMeBalance);
+    }
+
+    function testWithdrawFromMultipleFunders() public funded {
+        uint160 numberOfFunders =  10;
+        uint160 index = 1;
+        for (uint160 i = index; i < numberOfFunders; i++) {
+            // hoax = prank + deal
+            hoax(address(i), fundAmount);
+            fundMe.fund{value: fundAmount}();
+        }
+
+        uint256 beforeOwnerBalance =fundMe.owner().balance;
+        uint256 beforeFundMeBalance = address(fundMe).balance;
+
+        vm.startPrank(fundMe.owner());
+        fundMe.withdraw();
+        vm.stopPrank();
+
+        uint256 afterFundMeBalance = address(fundMe).balance;
+        uint256 afterOwnerBalance = fundMe.owner().balance;
+
+        // Assert
+        assertEq(afterFundMeBalance, 0);
+        assertEq(beforeFundMeBalance + beforeOwnerBalance, afterOwnerBalance);
     }
 }
