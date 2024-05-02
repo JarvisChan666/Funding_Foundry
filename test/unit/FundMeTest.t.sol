@@ -4,8 +4,8 @@ pragma solidity ^0.8.19;
 // 2. Imports
 
 import {Test, console} from "forge-std/Test.sol";
-import {FundMe} from "../src/FundMe.sol";
-import {DeployFundMe} from "../script/DeployFundMe.s.sol";
+import {FundMe} from "../../src/FundMe.sol";
+import {DeployFundMe} from "../../script/DeployFundMe.s.sol";
 
 /// @title FundMe Unit Tests
 /// @notice This contract implements tests for the FundMe contract using the Forge framework for Solidity testing.
@@ -23,6 +23,7 @@ contract FundMeTest is Test {
     function setUp() external {
         deployFundMe = new DeployFundMe();
         fundMe = deployFundMe.run();
+        vm.deal(FUNDER, fundAmount);
         /*
         Within the deployment process(during that deployment process) initiated by setUp
         the DeployFundMe contract is msg.sender for the constructor of FundMe,
