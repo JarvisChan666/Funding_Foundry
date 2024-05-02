@@ -14,7 +14,7 @@ import {PriceConverter} from "./PriceConverter.sol";
 error FundMe_NotOwner();
 
 /// @title A funding contract with minimum USD threshold
-/// @dev This contract allows users to fund ETH and withdraw it by owner. It utilizes a Chainlink Price Feed for conversion rates.
+/// @dev This contract allows users to fund ETH and withdraw it by i_owner. It utilizes a Chainlink Price Feed for conversion rates.
 /// @author jarvischan
 contract FundMe {
     using PriceConverter for uint256;
@@ -22,14 +22,14 @@ contract FundMe {
     // State variables
     mapping(address => uint256) private addressToAmountFunded;
     address[] public funders;
-    address public immutable owner;
+    address public immutable i_owner;
     uint256 public constant MINIMUM_USD = 5e18;
     bool private locked;
-    AggregatorV3Interface private priceFeed;
+    AggregatorV3Interface private s_priceFeed;
     event FundReceived(address sender, uint256 amount);
 
     modifier onlyOwner() {
-        if (msg.sender != owner) revert FundMe_NotOwner();
+        if (msg.sender != i_owner) revert FundMe_NotOwner();
         _;
     }
 
@@ -42,16 +42,16 @@ contract FundMe {
 
     constructor(address priceFeedAddress) {
         // If we just deploy FundMe,
-        // owner will be our own address
-        owner = msg.sender;
-        priceFeed = AggregatorV3Interface(priceFeedAddress);
+        // i_owner will be our own address
+        i_owner = msg.sender;
+        s_priceFeed = AggregatorV3Interface(priceFeedAddress);
     }
 
     /// @notice Allows users to fund the contract with ETH based on the set USD value.
     /// @dev The amount of ETH is converted to USD using the current price feed value.
     function fund() public payable {
         require(
-            msg.value.getConversionRate(priceFeed) >= MINIMUM_USD,
+            msg.value.getConversionRate(s_priceFeed) >= MINIMUM_USD,
             "Insufficient ETH!"
         );
         // require(PriceConverter.getConversionRate(msg.value) >= MINIMUM_USD, "You need to spend more ETH!");
@@ -59,7 +59,7 @@ contract FundMe {
         funders.push(msg.sender);
     }
 
-    /// @notice Withdraws all funds from the contract sending them to the owner.
+    /// @notice Withdraws all funds from the contract sending them to the i_owner.
     /// @dev This function uses nonReentrancy modifier to prevent reentrant attacks.
     function withdraw() public onlyOwner nonReentrant {
         uint256 funderLength = funders.length; // Read storage once, gas efficient
@@ -69,11 +69,12 @@ contract FundMe {
             addressToAmountFunded[funder] = 0;
         }
         funders = new address[](0);
-        (bool success, ) = payable(owner).call{value: address(this).balance}(
+        (bool success, ) = payable(i_owner).call{value: address(this).balance}(
             ""
         );
         require(success, "Transfer failed");
     }
+
     
     // function withdraw() public onlyOwner nonReentrant {
     //     address[] memory fundersCopy = funders;
@@ -82,7 +83,7 @@ contract FundMe {
     //         addressToAmountFunded[funder] = 0;
     //     }
     //     funders = new address[](0);
-    //     (bool success, ) = payable(owner).call{value: address(this).balance}(
+    //     (bool success, ) = payable(i_owner).call{value: address(this).balance}(
     //         ""
     //     );
     //     require(success, "Transfer failed");
