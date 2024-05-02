@@ -19,14 +19,14 @@ contract FundMeTest is Test {
     uint256 private GAS_PRICE = 6;
 
     /// @dev Sets up a new instance of the FundMe contract for each test case.
-    /// Fundme owner is deploy script
+    /// Fundme i_owner is deploy script
     function setUp() external {
         deployFundMe = new DeployFundMe();
         fundMe = deployFundMe.run();
         /*
         Within the deployment process(during that deployment process) initiated by setUp
         the DeployFundMe contract is msg.sender for the constructor of FundMe,
-        and hence it becomes the owner.
+        and hence it becomes the i_owner.
         */
     }
 
@@ -44,8 +44,8 @@ contract FundMeTest is Test {
 
     /// @notice
     function testOwnerIsMsgSender() public view {
-        console.log(fundMe.owner()); //0x18
-        assertEq(fundMe.owner(), msg.sender);
+        console.log(fundMe.i_owner()); //0x18
+        assertEq(fundMe.i_owner(), msg.sender);
     }
 
     /// @notice Test funding of the contract and balance update.
@@ -98,8 +98,8 @@ contract FundMeTest is Test {
         assertEq(fundAmount, amountFunded);
     }
 
-    /// @notice Test withdrawal of funds by owner.
-    /// check balance, check if not withdrawed by owner
+    /// @notice Test withdrawal of funds by i_owner.
+    /// check balance, check if not withdrawed by i_owner
     function testWithdrawNotByOwner() public funded {
         vm.expectRevert();
         fundMe.withdraw();
@@ -107,13 +107,13 @@ contract FundMeTest is Test {
 
     function testWithdrawBySingleOwner() public funded {
         // Arrange
-        uint256 beforeOwnerBalance = fundMe.owner().balance;
+        uint256 beforeOwnerBalance = fundMe.i_owner().balance;
         uint256 beforeFundMeBalance = address(fundMe).balance;
 
         //Act
         uint256 beforeGas  = gasleft(); // How much gas you left before transaction.
         vm.txGasPrice(GAS_PRICE); // et the 
-        vm.prank(fundMe.owner());
+        vm.prank(fundMe.i_owner());
         fundMe.withdraw();
 
         uint256 afterGas  = gasleft();
@@ -124,7 +124,7 @@ contract FundMeTest is Test {
         console.log(afterGas);
 
         // Assert
-        uint256 afterOwnerBalance = fundMe.owner().balance;
+        uint256 afterOwnerBalance = fundMe.i_owner().balance;
         uint256 afterFundMeBalance = address(fundMe).balance;
         // Assert
         assertEq(afterFundMeBalance, 0);
@@ -140,18 +140,20 @@ contract FundMeTest is Test {
             fundMe.fund{value: fundAmount}();
         }
 
-        uint256 beforeOwnerBalance =fundMe.owner().balance;
+        uint256 beforeOwnerBalance =fundMe.i_owner().balance;
         uint256 beforeFundMeBalance = address(fundMe).balance;
 
-        vm.startPrank(fundMe.owner());
+        vm.startPrank(fundMe.i_owner());
         fundMe.withdraw();
         vm.stopPrank();
 
         uint256 afterFundMeBalance = address(fundMe).balance;
-        uint256 afterOwnerBalance = fundMe.owner().balance;
+        uint256 afterOwnerBalance = fundMe.i_owner().balance;
 
         // Assert
         assertEq(afterFundMeBalance, 0);
         assertEq(beforeFundMeBalance + beforeOwnerBalance, afterOwnerBalance);
     }
+
+ 
 }
