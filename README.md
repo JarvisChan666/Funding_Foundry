@@ -21,7 +21,7 @@ npm install / yarn
 make build
 ```
 2. Run **Anvil local network** and deploy FundMe contract
-- **In the first terminal**:**
+- **In the first terminal**:
 ```
 make anvil
 ```
@@ -38,7 +38,8 @@ export const contractAddress = "${your address}"
 5. Add the local network in MetaMask
    1. id:31337
    2. RPC-URL:127.0.0.1:8545
-6. Now you can interact with FundMe contract by using this "BEAUTIFUL" UI !
+6. Import your anvil wallt by using the private key provided in "make anvil" terminal log. 
+7. Now you can interact with FundMe contract by using this "BEAUTIFUL" UI !
 
 
 
