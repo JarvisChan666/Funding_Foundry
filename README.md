@@ -12,18 +12,35 @@ The FundMe contract provides a platform for users to fund with Ether (ETH) based
 The FundMe contract is written in Solidity ^0.8.18 and designed for the Ethereum blockchain. To interact with the contract, users must have an Ethereum wallet with ETH and be connected to a network that has access to Chainlink Data Feeds.
 
 ## QuickStart
-To deploy the FundMe contract, follow these steps:
-1. Clone the repository to your local machine.
-2. Install necessary dependencies via `npm install`.
-3. Configure your environment variables to include your Ethereum private key and RPC url.
-4. Run the deployment script with `npx hardhat run scripts/deploy.js`.
+1. **Initialization**
    
 ```
 git clone https://github.com/JarvisChan666/Funding_Foundry
 cd Funding_Foundry
 npm install / yarn
-forge build
+make build
 ```
+2. Run **Anvil local network** and deploy FundMe contract
+- **In the first terminal**:**
+```
+make anvil
+```
+- **In the second terminal**:
+```
+
+make deploy
+```
+3. Update your `constants.js` with your deployed FundMe contract address(In the second terminal)
+```solidity
+export const contractAddress = "${your address}"
+```
+4. Right click the "**index.html**" in your VSCode and run **"open with live server"**(Please install "Live Server" plugin on your vscode first!).
+5. Add the local network in MetaMask
+   1. id:31337
+   2. RPC-URL:127.0.0.1:8545
+6. Now you can interact with FundMe contract by using this "BEAUTIFUL" UI !
+
+
 
 ## Usage
 

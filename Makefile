@@ -49,7 +49,7 @@ format:
 	forge fmt
 
 anvil:
-	anvil --port 8545 --chain-id 1337 --accounts 10
+	anvil --port 8545 --chain-id 31337 --accounts 10
 
 # Set network-specific args
 network ?= localhost # Default network; override with make deploy network=sepolia
